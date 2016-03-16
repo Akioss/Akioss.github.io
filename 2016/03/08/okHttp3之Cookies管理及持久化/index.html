@@ -1,0 +1,684 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css"/>
+
+
+
+
+  <link href="//fonts.googleapis.com/css?family=Lato:300,400,700,400italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=0.5.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Android," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=0.5.0" />
+
+
+
+
+
+
+<meta name="description" content="okHttp3正式版刚发布了没几天，正好重构之前的代码，于是第一时间入坑了。对okHttp3的一些改变，会陆续写下来，这是第一篇Cookies管理及持久化。
+
+Cookies管理OkHttp的源码过于复杂，感兴趣的同学可以自行阅读，这里只针对HttpEngineer类进行分析，从字面意思即可看出这个类负责http请求的request、response等等操作的处理，而cookies管理也是随着h">
+<meta property="og:type" content="article">
+<meta property="og:title" content="okHttp3之Cookies管理及持久化">
+<meta property="og:url" content="http://yoursite.com/2016/03/08/okHttp3之Cookies管理及持久化/index.html">
+<meta property="og:site_name" content="Akioss Blog">
+<meta property="og:description" content="okHttp3正式版刚发布了没几天，正好重构之前的代码，于是第一时间入坑了。对okHttp3的一些改变，会陆续写下来，这是第一篇Cookies管理及持久化。
+
+Cookies管理OkHttp的源码过于复杂，感兴趣的同学可以自行阅读，这里只针对HttpEngineer类进行分析，从字面意思即可看出这个类负责http请求的request、response等等操作的处理，而cookies管理也是随着h">
+<meta property="og:updated_time" content="2016-03-16T03:59:41.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="okHttp3之Cookies管理及持久化">
+<meta name="twitter:description" content="okHttp3正式版刚发布了没几天，正好重构之前的代码，于是第一时间入坑了。对okHttp3的一些改变，会陆续写下来，这是第一篇Cookies管理及持久化。
+
+Cookies管理OkHttp的源码过于复杂，感兴趣的同学可以自行阅读，这里只针对HttpEngineer类进行分析，从字面意思即可看出这个类负责http请求的request、response等等操作的处理，而cookies管理也是随着h">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+  <title> okHttp3之Cookies管理及持久化 | Akioss Blog </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">Akioss Blog</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-home fa-fw"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-archive fa-fw"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                okHttp3之Cookies管理及持久化
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-03-08T11:30:58+08:00" content="2016-03-08">
+              2016-03-08
+            </time>
+          </span>
+
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <blockquote>
+<p>okHttp3正式版刚发布了没几天，正好重构之前的代码，于是第一时间入坑了。对okHttp3的一些改变，会陆续写下来，这是第一篇Cookies管理及持久化。</p>
+</blockquote>
+<h2 id="Cookies管理"><a href="#Cookies管理" class="headerlink" title="Cookies管理"></a>Cookies管理</h2><p>OkHttp的源码过于复杂，感兴趣的同学可以自行阅读，这里只针对<code>HttpEngineer</code>类进行分析，从字面意思即可看出这个类负责http请求的request、response等等操作的处理，而cookies管理也是随着http请求的request、response来处理。</p>
+<h3 id="3-0之前"><a href="#3-0之前" class="headerlink" title="3.0之前"></a>3.0之前</h3><p>先看networkRequest方法，在里面通过client.getCookieHandler()函数获得了CookieHandler对象，通过该对象拿到cookie并设置到请求头里，请求结束后取得响应后通过networkResponse.headers()函数将请求头获得传入receiveHeaders函数，并将取得的cookie存入getCookieHandler得到的一个CookieHandler对象中去<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> Request <span class="title">networkRequest</span><span class="params">(Request request)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  Request.Builder result = request.newBuilder();</span><br><span class="line"></span><br><span class="line">  <span class="comment">//例行省略.....</span></span><br><span class="line"></span><br><span class="line">  CookieHandler cookieHandler = client.getCookieHandler();</span><br><span class="line">  <span class="keyword">if</span> (cookieHandler != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="comment">// Capture the request headers added so far so that they can be offered to the CookieHandler.</span></span><br><span class="line">    <span class="comment">// This is mostly to stay close to the RI; it is unlikely any of the headers above would</span></span><br><span class="line">    <span class="comment">// affect cookie choice besides "Host".</span></span><br><span class="line">    Map&lt;String, List&lt;String&gt;&gt; headers = OkHeaders.toMultimap(result.build().headers(), <span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">    Map&lt;String, List&lt;String&gt;&gt; cookies = cookieHandler.get(request.uri(), headers);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Add any new cookies to the request.</span></span><br><span class="line">    OkHeaders.addCookies(result, cookies);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//例行省略....</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> result.build();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">readResponse</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="comment">//例行省略....</span></span><br><span class="line"></span><br><span class="line">  receiveHeaders(networkResponse.headers());</span><br><span class="line"></span><br><span class="line">  <span class="comment">//例行省略....</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">receiveHeaders</span><span class="params">(Headers headers)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  CookieHandler cookieHandler = client.getCookieHandler();</span><br><span class="line">  <span class="keyword">if</span> (cookieHandler != <span class="keyword">null</span>) &#123;</span><br><span class="line">    cookieHandler.put(userRequest.uri(), OkHeaders.toMultimap(headers, <span class="keyword">null</span>));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>CookieHandler对象是OkHttpClient类中的一个属性，传入了这个对象，那么OkHttp就会对cookie进行自动管理<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> CookieHandler cookieHandler;</span><br><span class="line"><span class="function"><span class="keyword">public</span> OkHttpClient <span class="title">setCookieHandler</span><span class="params">(CookieHandler cookieHandler)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">this</span>.cookieHandler = cookieHandler;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> CookieHandler <span class="title">getCookieHandler</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> cookieHandler;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">OkHttpClient client = <span class="keyword">new</span> OkHttpClient();</span><br><span class="line">client.setCookieHandler(CookieHandler cookieHanlder);</span><br></pre></td></tr></table></figure>
+<h3 id="3-0之后"><a href="#3-0之后" class="headerlink" title="3.0之后"></a>3.0之后</h3><p>而在OkHttp3中，对cookie而言，新增了两个类<code>Cookiejar</code>、<code>Cookie</code>两个类，在了解这两个类之前，先去看一下<code>HttpEngine</code>关于cookie管理的变化<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> Request <span class="title">networkRequest</span><span class="params">(Request request)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    Request.Builder result = request.newBuilder();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//例行省略....</span></span><br><span class="line">    </span><br><span class="line">    List&lt;Cookie&gt; cookies = client.cookieJar().loadForRequest(request.url());</span><br><span class="line">    <span class="keyword">if</span> (!cookies.isEmpty()) &#123;</span><br><span class="line">      result.header(<span class="string">"Cookie"</span>, cookieHeader(cookies));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//例行省略....</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result.build();</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> String <span class="title">cookieHeader</span><span class="params">(List&lt;Cookie&gt; cookies)</span> </span>&#123;</span><br><span class="line">    StringBuilder cookieHeader = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>, size = cookies.size(); i &lt; size; i++) &#123;</span><br><span class="line">      <span class="keyword">if</span> (i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        cookieHeader.append(<span class="string">"; "</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      Cookie cookie = cookies.get(i);</span><br><span class="line">      cookieHeader.append(cookie.name()).append(<span class="string">'='</span>).append(cookie.value());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> cookieHeader.toString();</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">receiveHeaders</span><span class="params">(Headers headers)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (client.cookieJar() == CookieJar.NO_COOKIES) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    List&lt;Cookie&gt; cookies = Cookie.parseAll(userRequest.url(), headers);</span><br><span class="line">    <span class="keyword">if</span> (cookies.isEmpty()) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    client.cookieJar().saveFromResponse(userRequest.url(), cookies);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>通过以上几个关键方法，可以很明显的感觉到作者的意图了，为了更加自由定制化的cookie管理。其中<code>loadForRequest()</code>、<code>saveFromResponse()</code>这两个方法最为关键，分别是在发送时向request header中加入cookie，在接收时，读取response header中的cookie。现在再去看<code>Cookiejar</code>这个类，就很好理解了<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">CookieJar</span> </span>&#123;</span><br><span class="line">  <span class="comment">/** A cookie jar that never accepts any cookies. */</span></span><br><span class="line">  CookieJar NO_COOKIES = <span class="keyword">new</span> CookieJar() &#123;</span><br><span class="line">    <span class="meta">@Override</span> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">saveFromResponse</span><span class="params">(HttpUrl url, List&lt;Cookie&gt; cookies)</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span> <span class="function"><span class="keyword">public</span> List&lt;Cookie&gt; <span class="title">loadForRequest</span><span class="params">(HttpUrl url)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">return</span> Collections.emptyList();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span><br><span class="line">   * Saves &#123;<span class="doctag">@code</span> cookies&#125; from an HTTP response to this store according to this jar's policy.</span><br><span class="line">   *</span><br><span class="line">   * &lt;p&gt;Note that this method may be called a second time for a single HTTP response if the response</span><br><span class="line">   * includes a trailer. For this obscure HTTP feature, &#123;<span class="doctag">@code</span> cookies&#125; contains only the trailer's</span><br><span class="line">   * cookies.</span><br><span class="line">   */</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">saveFromResponse</span><span class="params">(HttpUrl url, List&lt;Cookie&gt; cookies)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span><br><span class="line">   * Load cookies from the jar for an HTTP request to &#123;<span class="doctag">@code</span> url&#125;. This method returns a possibly</span><br><span class="line">   * empty list of cookies for the network request.</span><br><span class="line">   *</span><br><span class="line">   * &lt;p&gt;Simple implementations will return the accepted cookies that have not yet expired and that</span><br><span class="line">   * &#123;<span class="doctag">@linkplain</span> Cookie#matches match&#125; &#123;<span class="doctag">@code</span> url&#125;.</span><br><span class="line">   */</span></span><br><span class="line">  <span class="function">List&lt;Cookie&gt; <span class="title">loadForRequest</span><span class="params">(HttpUrl url)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>so!在OkHttpClient创建时，传入这个CookieJar的实现，就能完成对Cookie的自动管理了<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">OkHttpClient client = <span class="keyword">new</span> OkHttpClient.Builder()</span><br><span class="line">    .cookieJar(<span class="keyword">new</span> CookieJar() &#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> HashMap&lt;HttpUrl, List&lt;Cookie&gt;&gt; cookieStore = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">saveFromResponse</span><span class="params">(HttpUrl url, List&lt;Cookie&gt; cookies)</span> </span>&#123;</span><br><span class="line">            cookieStore.put(url, cookies);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> List&lt;Cookie&gt; <span class="title">loadForRequest</span><span class="params">(HttpUrl url)</span> </span>&#123;</span><br><span class="line">            List&lt;Cookie&gt; cookies = cookieStore.get(url);</span><br><span class="line">            <span class="keyword">return</span> cookies != <span class="keyword">null</span> ? cookies : <span class="keyword">new</span> ArrayList&lt;Cookie&gt;();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br><span class="line">    .build();</span><br></pre></td></tr></table></figure></p>
+<h2 id="Cookies持久化"><a href="#Cookies持久化" class="headerlink" title="Cookies持久化"></a>Cookies持久化</h2><p>对Cookies持久化的方案，与之前版本并无很大区别，还是参考<a href="http://loopj.com/android-async-http/" target="_blank" rel="external">android-async-http</a>这个库，主要参考其中两个类:</p>
+<ul>
+<li><code>PersistentCookieStore</code></li>
+<li><code>SerializableHttpCookie</code><br>与之前版本的区别是要将对<code>java.net.HttpCookie</code>这个类的缓存处理换成对<code>okhttp3.Cookie</code>的处理，其他方面几乎一样。<br>废话不多说了，直接上代码<h3 id="SerializableOkHttpCookies"><a href="#SerializableOkHttpCookies" class="headerlink" title="SerializableOkHttpCookies"></a>SerializableOkHttpCookies</h3>主要做两件事：</li>
+<li>将Cookie对象输出为ObjectStream</li>
+<li>将ObjectStream序列化成Cookie对象<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SerializableOkHttpCookies</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">transient</span> <span class="keyword">final</span> Cookie cookies;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">transient</span> Cookie clientCookies;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">SerializableOkHttpCookies</span><span class="params">(Cookie cookies)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.cookies = cookies;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Cookie <span class="title">getCookies</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Cookie bestCookies = cookies;</span><br><span class="line">        <span class="keyword">if</span> (clientCookies != <span class="keyword">null</span>) &#123;</span><br><span class="line">            bestCookies = clientCookies;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> bestCookies;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeObject</span><span class="params">(ObjectOutputStream out)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        out.writeObject(cookies.name());</span><br><span class="line">        out.writeObject(cookies.value());</span><br><span class="line">        out.writeLong(cookies.expiresAt());</span><br><span class="line">        out.writeObject(cookies.domain());</span><br><span class="line">        out.writeObject(cookies.path());</span><br><span class="line">        out.writeBoolean(cookies.secure());</span><br><span class="line">        out.writeBoolean(cookies.httpOnly());</span><br><span class="line">        out.writeBoolean(cookies.hostOnly());</span><br><span class="line">        out.writeBoolean(cookies.persistent());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">readObject</span><span class="params">(ObjectInputStream in)</span> <span class="keyword">throws</span> IOException, ClassNotFoundException </span>&#123;</span><br><span class="line">        String name = (String) in.readObject();</span><br><span class="line">        String value = (String) in.readObject();</span><br><span class="line">        <span class="keyword">long</span> expiresAt = in.readLong();</span><br><span class="line">        String domain = (String) in.readObject();</span><br><span class="line">        String path = (String) in.readObject();</span><br><span class="line">        <span class="keyword">boolean</span> secure = in.readBoolean();</span><br><span class="line">        <span class="keyword">boolean</span> httpOnly = in.readBoolean();</span><br><span class="line">        <span class="keyword">boolean</span> hostOnly = in.readBoolean();</span><br><span class="line">        <span class="keyword">boolean</span> persistent = in.readBoolean();</span><br><span class="line">        Cookie.Builder builder = <span class="keyword">new</span> Cookie.Builder();</span><br><span class="line">        builder = builder.name(name);</span><br><span class="line">        builder = builder.value(value);</span><br><span class="line">        builder = builder.expiresAt(expiresAt);</span><br><span class="line">        builder = hostOnly ? builder.hostOnlyDomain(domain) : builder.domain(domain);</span><br><span class="line">        builder = builder.path(path);</span><br><span class="line">        builder = secure ? builder.secure() : builder;</span><br><span class="line">        builder = httpOnly ? builder.httpOnly() : builder;</span><br><span class="line">        clientCookies =builder.build();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="PersistentCookieStore"><a href="#PersistentCookieStore" class="headerlink" title="PersistentCookieStore"></a>PersistentCookieStore</h3><p>根据一定的规则去缓存或者获取Cookie:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">PersistentCookieStore</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String LOG_TAG = <span class="string">"PersistentCookieStore"</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String COOKIE_PREFS = <span class="string">"Cookies_Prefs"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;String, ConcurrentHashMap&lt;String, Cookie&gt;&gt; cookies;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> SharedPreferences cookiePrefs;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">PersistentCookieStore</span><span class="params">(Context context)</span> </span>&#123;</span><br><span class="line">        cookiePrefs = context.getSharedPreferences(COOKIE_PREFS, <span class="number">0</span>);</span><br><span class="line">        cookies = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">        <span class="comment">//将持久化的cookies缓存到内存中 即map cookies</span></span><br><span class="line">        Map&lt;String, ?&gt; prefsMap = cookiePrefs.getAll();</span><br><span class="line">        <span class="keyword">for</span> (Map.Entry&lt;String, ?&gt; entry : prefsMap.entrySet()) &#123;</span><br><span class="line">            String[] cookieNames = TextUtils.split((String) entry.getValue(), <span class="string">","</span>);</span><br><span class="line">            <span class="keyword">for</span> (String name : cookieNames) &#123;</span><br><span class="line">                String encodedCookie = cookiePrefs.getString(name, <span class="keyword">null</span>);</span><br><span class="line">                <span class="keyword">if</span> (encodedCookie != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    Cookie decodedCookie = decodeCookie(encodedCookie);</span><br><span class="line">                    <span class="keyword">if</span> (decodedCookie != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        <span class="keyword">if</span> (!cookies.containsKey(entry.getKey())) &#123;</span><br><span class="line">                            cookies.put(entry.getKey(), <span class="keyword">new</span> ConcurrentHashMap&lt;String, Cookie&gt;());</span><br><span class="line">                        &#125;</span><br><span class="line">                        cookies.get(entry.getKey()).put(name, decodedCookie);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> String <span class="title">getCookieToken</span><span class="params">(Cookie cookie)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> cookie.name() + <span class="string">"@"</span> + cookie.domain();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(HttpUrl url, Cookie cookie)</span> </span>&#123;</span><br><span class="line">        String name = getCookieToken(cookie);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//将cookies缓存到内存中 如果缓存过期 就重置此cookie</span></span><br><span class="line">        <span class="keyword">if</span> (!cookie.persistent()) &#123;</span><br><span class="line">            <span class="keyword">if</span> (!cookies.containsKey(url.host())) &#123;</span><br><span class="line">                cookies.put(url.host(), <span class="keyword">new</span> ConcurrentHashMap&lt;String, Cookie&gt;());</span><br><span class="line">            &#125;</span><br><span class="line">            cookies.get(url.host()).put(name, cookie);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (cookies.containsKey(url.host())) &#123;</span><br><span class="line">                cookies.get(url.host()).remove(name);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//讲cookies持久化到本地</span></span><br><span class="line">        SharedPreferences.Editor prefsWriter = cookiePrefs.edit();</span><br><span class="line">        prefsWriter.putString(url.host(), TextUtils.join(<span class="string">","</span>, cookies.get(url.host()).keySet()));</span><br><span class="line">        prefsWriter.putString(name, encodeCookie(<span class="keyword">new</span> SerializableOkHttpCookies(cookie)));</span><br><span class="line">        prefsWriter.apply();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> List&lt;Cookie&gt; <span class="title">get</span><span class="params">(HttpUrl url)</span> </span>&#123;</span><br><span class="line">        ArrayList&lt;Cookie&gt; ret = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="keyword">if</span> (cookies.containsKey(url.host()))</span><br><span class="line">            ret.addAll(cookies.get(url.host()).values());</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">removeAll</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        SharedPreferences.Editor prefsWriter = cookiePrefs.edit();</span><br><span class="line">        prefsWriter.clear();</span><br><span class="line">        prefsWriter.apply();</span><br><span class="line">        cookies.clear();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">remove</span><span class="params">(HttpUrl url, Cookie cookie)</span> </span>&#123;</span><br><span class="line">        String name = getCookieToken(cookie);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (cookies.containsKey(url.host()) &amp;&amp; cookies.get(url.host()).containsKey(name)) &#123;</span><br><span class="line">            cookies.get(url.host()).remove(name);</span><br><span class="line"></span><br><span class="line">            SharedPreferences.Editor prefsWriter = cookiePrefs.edit();</span><br><span class="line">            <span class="keyword">if</span> (cookiePrefs.contains(name)) &#123;</span><br><span class="line">                prefsWriter.remove(name);</span><br><span class="line">            &#125;</span><br><span class="line">            prefsWriter.putString(url.host(), TextUtils.join(<span class="string">","</span>, cookies.get(url.host()).keySet()));</span><br><span class="line">            prefsWriter.apply();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> List&lt;Cookie&gt; <span class="title">getCookies</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        ArrayList&lt;Cookie&gt; ret = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="keyword">for</span> (String key : cookies.keySet())</span><br><span class="line">            ret.addAll(cookies.get(key).values());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span><br><span class="line">     * cookies 序列化成 string</span><br><span class="line">     *</span><br><span class="line">     * <span class="doctag">@param</span> cookie 要序列化的cookie</span><br><span class="line">     * <span class="doctag">@return</span> 序列化之后的string</span><br><span class="line">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> String <span class="title">encodeCookie</span><span class="params">(SerializableOkHttpCookies cookie)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (cookie == <span class="keyword">null</span>)</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        ByteArrayOutputStream os = <span class="keyword">new</span> ByteArrayOutputStream();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            ObjectOutputStream outputStream = <span class="keyword">new</span> ObjectOutputStream(os);</span><br><span class="line">            outputStream.writeObject(cookie);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            Log.d(LOG_TAG, <span class="string">"IOException in encodeCookie"</span>, e);</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> byteArrayToHexString(os.toByteArray());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span><br><span class="line">     * 将字符串反序列化成cookies</span><br><span class="line">     *</span><br><span class="line">     * <span class="doctag">@param</span> cookieString cookies string</span><br><span class="line">     * <span class="doctag">@return</span> cookie object</span><br><span class="line">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Cookie <span class="title">decodeCookie</span><span class="params">(String cookieString)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">byte</span>[] bytes = hexStringToByteArray(cookieString);</span><br><span class="line">        ByteArrayInputStream byteArrayInputStream = <span class="keyword">new</span> ByteArrayInputStream(bytes);</span><br><span class="line">        Cookie cookie = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            ObjectInputStream objectInputStream = <span class="keyword">new</span> ObjectInputStream(byteArrayInputStream);</span><br><span class="line">            cookie = ((SerializableOkHttpCookies) objectInputStream.readObject()).getCookies();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            Log.d(LOG_TAG, <span class="string">"IOException in decodeCookie"</span>, e);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (ClassNotFoundException e) &#123;</span><br><span class="line">            Log.d(LOG_TAG, <span class="string">"ClassNotFoundException in decodeCookie"</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> cookie;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span><br><span class="line">     * 二进制数组转十六进制字符串</span><br><span class="line">     *</span><br><span class="line">     * <span class="doctag">@param</span> bytes byte array to be converted</span><br><span class="line">     * <span class="doctag">@return</span> string containing hex values</span><br><span class="line">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> String <span class="title">byteArrayToHexString</span><span class="params">(<span class="keyword">byte</span>[] bytes)</span> </span>&#123;</span><br><span class="line">        StringBuilder sb = <span class="keyword">new</span> StringBuilder(bytes.length * <span class="number">2</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">byte</span> element : bytes) &#123;</span><br><span class="line">            <span class="keyword">int</span> v = element &amp; <span class="number">0xff</span>;</span><br><span class="line">            <span class="keyword">if</span> (v &lt; <span class="number">16</span>) &#123;</span><br><span class="line">                sb.append(<span class="string">'0'</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            sb.append(Integer.toHexString(v));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> sb.toString().toUpperCase(Locale.US);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span><br><span class="line">     * 十六进制字符串转二进制数组</span><br><span class="line">     *</span><br><span class="line">     * <span class="doctag">@param</span> hexString string of hex-encoded values</span><br><span class="line">     * <span class="doctag">@return</span> decoded byte array</span><br><span class="line">     */</span></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">byte</span>[] hexStringToByteArray(String hexString) &#123;</span><br><span class="line">        <span class="keyword">int</span> len = hexString.length();</span><br><span class="line">        <span class="keyword">byte</span>[] data = <span class="keyword">new</span> <span class="keyword">byte</span>[len / <span class="number">2</span>];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; len; i += <span class="number">2</span>) &#123;</span><br><span class="line">            data[i / <span class="number">2</span>] = (<span class="keyword">byte</span>) ((Character.digit(hexString.charAt(i), <span class="number">16</span>) &lt;&lt; <span class="number">4</span>) + Character.digit(hexString.charAt(i + <span class="number">1</span>), <span class="number">16</span>));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> data;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="最终效果"><a href="#最终效果" class="headerlink" title="最终效果"></a>最终效果</h2><p>完成对Cookie持久化之后，就可以对Cookiejar进行进一步修改了，最终效果：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span><br><span class="line">     * 自动管理Cookies</span><br><span class="line">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="class"><span class="keyword">class</span> <span class="title">CookiesManager</span> <span class="keyword">implements</span> <span class="title">CookieJar</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> PersistentCookieStore cookieStore = <span class="keyword">new</span> PersistentCookieStore(getApplicationContext());</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">saveFromResponse</span><span class="params">(HttpUrl url, List&lt;Cookie&gt; cookies)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (cookies != <span class="keyword">null</span> &amp;&amp; cookies.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">for</span> (Cookie item : cookies) &#123;</span><br><span class="line">                    cookieStore.add(url, item);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> List&lt;Cookie&gt; <span class="title">loadForRequest</span><span class="params">(HttpUrl url)</span> </span>&#123;</span><br><span class="line">            List&lt;Cookie&gt; cookies = cookieStore.get(url);</span><br><span class="line">            <span class="keyword">return</span> cookies;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="Tips"><a href="#Tips" class="headerlink" title="Tips"></a>Tips</h2><p>在这样做之前，尝试了使用<code>Interceptor</code>和<code>NetWorkInterceptor</code>在Http请求request和response时，拦截响应链，加入对Cookie的管理。so！接下来可能会详细介绍下<code>Interceptor</code>这个非常酷的实现。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Android/" rel="tag">#Android</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/03/08/一个有趣的问题（java静态字段）/" rel="prev" title="一个有趣的问题（java静态字段）">
+                一个有趣的问题（java静态字段） <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/cat.jpg"
+               alt="Akioss" />
+          <p class="site-author-name" itemprop="name">Akioss</p>
+          <p class="site-description motion-element" itemprop="description">如果不再写代码 也许是个好厨子</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">3</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        <div class="links-of-blogroll motion-element">
+          
+        </div>
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc-indicator-top post-toc-indicator">
+            <i class="fa fa-angle-double-up"></i>
+          </div>
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Cookies管理"><span class="nav-number">1.</span> <span class="nav-text">Cookies管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-0之前"><span class="nav-number">1.1.</span> <span class="nav-text">3.0之前</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-0之后"><span class="nav-number">1.2.</span> <span class="nav-text">3.0之后</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cookies持久化"><span class="nav-number">2.</span> <span class="nav-text">Cookies持久化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SerializableOkHttpCookies"><span class="nav-number">2.1.</span> <span class="nav-text">SerializableOkHttpCookies</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PersistentCookieStore"><span class="nav-number">2.2.</span> <span class="nav-text">PersistentCookieStore</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#最终效果"><span class="nav-number">3.</span> <span class="nav-text">最终效果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Tips"><span class="nav-number">4.</span> <span class="nav-text">Tips</span></a></li></ol></div>
+            
+          </div>
+          <div class="post-toc-indicator-bottom post-toc-indicator">
+            <i class="fa fa-angle-double-down"></i>
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Akioss</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Mist
+  </a>
+</div>
+
+
+
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+
+  
+
+
+
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js"></script>
+
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js"></script>
+
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=0.5.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=0.5.0"></script>
+
+
+
+  
+  
+
+  
+  
+<script type="text/javascript" src="/js/src/scrollspy.js?v=0.5.0"></script>
+
+<script type="text/javascript" id="sidebar.toc.highlight">
+  $(document).ready(function () {
+    var tocSelector = '.post-toc';
+    var $tocSelector = $(tocSelector);
+    var activeCurrentSelector = '.active-current';
+
+    $tocSelector
+      .on('activate.bs.scrollspy', function () {
+        var $currentActiveElement = $(tocSelector + ' .active').last();
+
+        removeCurrentActiveClass();
+        $currentActiveElement.addClass('active-current');
+
+        $tocSelector[0].scrollTop = $currentActiveElement.position().top;
+      })
+      .on('clear.bs.scrollspy', function () {
+        removeCurrentActiveClass();
+      });
+
+    function removeCurrentActiveClass () {
+      $(tocSelector + ' ' + activeCurrentSelector)
+        .removeClass(activeCurrentSelector.substring(1));
+    }
+
+    function processTOC () {
+      getTOCMaxHeight();
+      toggleTOCOverflowIndicators();
+    }
+
+    function getTOCMaxHeight () {
+      var height = $('.sidebar').height() -
+                   $tocSelector.position().top -
+                   $('.post-toc-indicator-bottom').height();
+
+      $tocSelector.css('height', height);
+
+      return height;
+    }
+
+    function toggleTOCOverflowIndicators () {
+      tocOverflowIndicator(
+        '.post-toc-indicator-top',
+        $tocSelector.scrollTop() > 0 ? 'show' : 'hide'
+      );
+
+      tocOverflowIndicator(
+        '.post-toc-indicator-bottom',
+        $tocSelector.scrollTop() >= $tocSelector.find('ol').height() - $tocSelector.height() ? 'hide' : 'show'
+      )
+    }
+
+    $(document).on('sidebar.motion.complete', function () {
+      processTOC();
+    });
+
+    $('body').scrollspy({ target: tocSelector });
+    $(window).on('resize', function () {
+      if ( $('.sidebar').hasClass('sidebar-active') ) {
+        processTOC();
+      }
+    });
+
+    onScroll($tocSelector);
+
+    function onScroll (element) {
+      element.on('mousewheel DOMMouseScroll', function (event) {
+          var oe = event.originalEvent;
+          var delta = oe.wheelDelta || -oe.detail;
+
+          this.scrollTop += ( delta < 0 ? 1 : -1 ) * 30;
+          event.preventDefault();
+
+          toggleTOCOverflowIndicators();
+      });
+    }
+
+    function tocOverflowIndicator (indicator, action) {
+      var $indicator = $(indicator);
+      var opacity = action === 'show' ? 1 : 0;
+      $indicator.velocity ?
+        $indicator.velocity('stop').velocity({
+          opacity: opacity
+        }, { duration: 100 }) :
+        $indicator.stop().animate({
+          opacity: opacity
+        }, 100);
+    }
+
+  });
+</script>
+
+<script type="text/javascript" id="sidebar.nav">
+  $(document).ready(function () {
+    var html = $('html');
+    var TAB_ANIMATE_DURATION = 200;
+    var hasVelocity = $.isFunction(html.velocity);
+
+    $('.sidebar-nav li').on('click', function () {
+      var item = $(this);
+      var activeTabClassName = 'sidebar-nav-active';
+      var activePanelClassName = 'sidebar-panel-active';
+      if (item.hasClass(activeTabClassName)) {
+        return;
+      }
+
+      var currentTarget = $('.' + activePanelClassName);
+      var target = $('.' + item.data('target'));
+
+      hasVelocity ?
+        currentTarget.velocity('transition.slideUpOut', TAB_ANIMATE_DURATION, function () {
+          target
+            .velocity('stop')
+            .velocity('transition.slideDownIn', TAB_ANIMATE_DURATION)
+            .addClass(activePanelClassName);
+        }) :
+        currentTarget.animate({ opacity: 0 }, TAB_ANIMATE_DURATION, function () {
+          currentTarget.hide();
+          target
+            .stop()
+            .css({'opacity': 0, 'display': 'block'})
+            .animate({ opacity: 1 }, TAB_ANIMATE_DURATION, function () {
+              currentTarget.removeClass(activePanelClassName);
+              target.addClass(activePanelClassName);
+            });
+        });
+
+      item.siblings().removeClass(activeTabClassName);
+      item.addClass(activeTabClassName);
+    });
+
+    $('.post-toc a').on('click', function (e) {
+      e.preventDefault();
+      var targetSelector = NexT.utils.escapeSelector(this.getAttribute('href'));
+      var offset = $(targetSelector).offset().top;
+      hasVelocity ?
+        html.velocity('stop').velocity('scroll', {
+          offset: offset  + 'px',
+          mobileHA: false
+        }) :
+        $('html, body').stop().animate({
+          scrollTop: offset
+        }, 500);
+    });
+
+    // Expand sidebar on post detail page by default, when post has a toc.
+    NexT.motion.middleWares.sidebar = function () {
+      var $tocContent = $('.post-toc-content');
+
+      if (CONFIG.scheme !== 'Pisces' && (CONFIG.sidebar.display === 'post' || CONFIG.sidebar.display === 'always')) {
+        if ($tocContent.length > 0 && $tocContent.html().trim().length > 0) {
+          NexT.utils.displaySidebar();
+        }
+      }
+    };
+  });
+</script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=0.5.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+  
+  
+  
+
+  
+
+
+</body>
+</html>
