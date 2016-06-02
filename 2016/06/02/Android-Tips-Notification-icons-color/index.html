@@ -41,7 +41,7 @@
 <link href="/css/main.css?v=0.5.0" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Java," />
+  <meta name="keywords" content="Android," />
 
 
 
@@ -57,24 +57,36 @@
 
 
 
-<meta name="description" content="问题在jake wharton的Twitter上看到他提得这样一个问题：于是测试了一下，发现很有趣，于是记录下来。
-测试类两个测试类如下123class TestMethodA &amp;#123;    static String name = &quot;akioss&quot;;&amp;#125;
-123class TestMethodB &amp;#123;    static final String name = &quot;akios">
+<meta name="description" content="将状态栏通知图标或者常驻图标改成深色的方法
+
+5.0之后Not since Lollipop. Starting with Android 5.0, the guidelines say:
+
+Notification icons must be entirely white.
+
+Even if they’re not, the system will only consider the alph">
 <meta property="og:type" content="article">
-<meta property="og:title" content="一个有趣的问题（java静态字段）">
-<meta property="og:url" content="http://yoursite.com/2016/03/08/一个有趣的问题（java静态字段）/index.html">
+<meta property="og:title" content="Android Tips_Notification icons color">
+<meta property="og:url" content="http://yoursite.com/2016/06/02/Android-Tips-Notification-icons-color/index.html">
 <meta property="og:site_name" content="Akioss Blog">
-<meta property="og:description" content="问题在jake wharton的Twitter上看到他提得这样一个问题：于是测试了一下，发现很有趣，于是记录下来。
-测试类两个测试类如下123class TestMethodA &amp;#123;    static String name = &quot;akioss&quot;;&amp;#125;
-123class TestMethodB &amp;#123;    static final String name = &quot;akios">
-<meta property="og:image" content="http://7xrn96.com1.z0.glb.clouddn.com/2016-3-8-jackwharton.png?watermark/2/text/YWtpb3NzQGdpdGh1Yg==/font/5a6L5L2T/fontsize/500/fill/I0VGRUZFRg==/dissolve/100/gravity/SouthEast/dx/10/dy/10">
-<meta property="og:updated_time" content="2016-05-17T08:16:44.000Z">
+<meta property="og:description" content="将状态栏通知图标或者常驻图标改成深色的方法
+
+5.0之后Not since Lollipop. Starting with Android 5.0, the guidelines say:
+
+Notification icons must be entirely white.
+
+Even if they’re not, the system will only consider the alph">
+<meta property="og:image" content="http://7xrn96.com1.z0.glb.clouddn.com/1464674386896.png?watermark/2/text/YWtpb3NzQGdpdGh1Yg==/font/5a6L5L2T/fontsize/500/fill/I0VGRUZFRg==/dissolve/100/gravity/SouthEast/dx/10/dy/10">
+<meta property="og:updated_time" content="2016-06-02T08:33:05.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="一个有趣的问题（java静态字段）">
-<meta name="twitter:description" content="问题在jake wharton的Twitter上看到他提得这样一个问题：于是测试了一下，发现很有趣，于是记录下来。
-测试类两个测试类如下123class TestMethodA &amp;#123;    static String name = &quot;akioss&quot;;&amp;#125;
-123class TestMethodB &amp;#123;    static final String name = &quot;akios">
-<meta name="twitter:image" content="http://7xrn96.com1.z0.glb.clouddn.com/2016-3-8-jackwharton.png?watermark/2/text/YWtpb3NzQGdpdGh1Yg==/font/5a6L5L2T/fontsize/500/fill/I0VGRUZFRg==/dissolve/100/gravity/SouthEast/dx/10/dy/10">
+<meta name="twitter:title" content="Android Tips_Notification icons color">
+<meta name="twitter:description" content="将状态栏通知图标或者常驻图标改成深色的方法
+
+5.0之后Not since Lollipop. Starting with Android 5.0, the guidelines say:
+
+Notification icons must be entirely white.
+
+Even if they’re not, the system will only consider the alph">
+<meta name="twitter:image" content="http://7xrn96.com1.z0.glb.clouddn.com/1464674386896.png?watermark/2/text/YWtpb3NzQGdpdGh1Yg==/font/5a6L5L2T/fontsize/500/fill/I0VGRUZFRg==/dissolve/100/gravity/SouthEast/dx/10/dy/10">
 
 
 
@@ -92,7 +104,7 @@
   };
 </script>
 
-  <title> 一个有趣的问题（java静态字段） | Akioss Blog </title>
+  <title> Android Tips_Notification icons color | Akioss Blog </title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -202,7 +214,7 @@
             
             
               
-                一个有趣的问题（java静态字段）
+                Android Tips_Notification icons color
               
             
           </h1>
@@ -214,8 +226,8 @@
               <i class="fa fa-calendar-o"></i>
             </span>
             <span class="post-meta-item-text">发表于</span>
-            <time itemprop="dateCreated" datetime="2016-03-08T14:19:21+08:00" content="2016-03-08">
-              2016-03-08
+            <time itemprop="dateCreated" datetime="2016-06-02T16:26:38+08:00" content="2016-06-02">
+              2016-06-02
             </time>
           </span>
 
@@ -241,21 +253,15 @@
       
 
       
-        <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>在jake wharton的Twitter上看到他提得这样一个问题：<br><img src="http://7xrn96.com1.z0.glb.clouddn.com/2016-3-8-jackwharton.png?watermark/2/text/YWtpb3NzQGdpdGh1Yg==/font/5a6L5L2T/fontsize/500/fill/I0VGRUZFRg==/dissolve/100/gravity/SouthEast/dx/10/dy/10" alt="ques"><br>于是测试了一下，发现很有趣，于是记录下来。</p>
-<h2 id="测试类"><a href="#测试类" class="headerlink" title="测试类"></a>测试类</h2><p>两个测试类如下<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TestMethodA</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> String name = <span class="string">"akioss"</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TestMethodB</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">final</span> String name = <span class="string">"akioss"</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="查看字节码"><a href="#查看字节码" class="headerlink" title="查看字节码"></a>查看字节码</h2><p>通过javap指令查看两个类的字节码</p>
-<h3 id="classA"><a href="#classA" class="headerlink" title="classA"></a>classA</h3><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">class com.akioss.TestMethodA &#123;</span><br><span class="line">  static java.lang.String name;</span><br><span class="line"></span><br><span class="line">  com.akioss.TestMethodA();</span><br><span class="line">    Code:</span><br><span class="line">       0: aload_0       </span><br><span class="line">       1: invokespecial #1                  // Method java/lang/Object."&lt;init&gt;":()V</span><br><span class="line">       4: return        </span><br><span class="line"></span><br><span class="line">  static &#123;&#125;;</span><br><span class="line">    Code:</span><br><span class="line">       0: ldc           #2                  // String akioss</span><br><span class="line">       2: putstatic     #3                  // Field name:Ljava/lang/String;</span><br><span class="line">       5: return        </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可以看到除了默认的构造方法之外，还有一个静态代码块，执行了putstatic指令</p>
-<h3 id="classB"><a href="#classB" class="headerlink" title="classB"></a>classB</h3><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">class com.akioss.TestMethodB &#123;</span><br><span class="line">  static final java.lang.String name;</span><br><span class="line"></span><br><span class="line">  com.akioss.TestMethodB();</span><br><span class="line">    Code:</span><br><span class="line">       0: aload_0       </span><br><span class="line">       1: invokespecial #1                  // Method java/lang/Object."&lt;init&gt;":()V</span><br><span class="line">       4: return        </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="Tips"><a href="#Tips" class="headerlink" title="Tips"></a>Tips</h2><p>之所以会产生这样的情况，就是在于<code>final</code>修饰符（好吧，这是废话 - -!），在讲明为何会出现上述情况之前，先来温习一下<code>static</code>和<code>final</code>两个的区别吧。</p>
-<ul>
-<li><strong>static</strong>：static修饰成员变量时，并不会随着类的实例化再去分配空间，从上边<code>putstatic</code>指令也可以看出来，但有一点它是变量。</li>
-<li><strong>final+static</strong>：final和static一同使用，那么被其修饰的值便成了<code>全局常量</code>，即不可变了。<br>所以大胆猜测<code>final+static</code>修饰的值一开始就会被jvm分配到常量池，不会在类中去作这一步操作。而<code>static</code>修饰的成员变量，实际是在类实例化的时候执行了一段static代码块，将成员变量<code>putstatic</code>,为了验证，改写了一下<code>TestMethodA.java</code><h4 id="TestMethodA"><a href="#TestMethodA" class="headerlink" title="TestMethodA"></a>TestMethodA</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TestMethodA</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> String name = <span class="string">"akioss"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span>&#123;</span><br><span class="line">        name = <span class="string">"jake"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<h4 id="其字节码"><a href="#其字节码" class="headerlink" title="其字节码"></a>其字节码</h4><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">class com.akioss.TestMethodA &#123;</span><br><span class="line">  static java.lang.String name;</span><br><span class="line"></span><br><span class="line">  com.akioss.TestMethodA();</span><br><span class="line">    Code:</span><br><span class="line">       0: aload_0       </span><br><span class="line">       1: invokespecial #1                  // Method java/lang/Object."&lt;init&gt;":()V</span><br><span class="line">       4: return        </span><br><span class="line"></span><br><span class="line">  static &#123;&#125;;</span><br><span class="line">    Code:</span><br><span class="line">       0: ldc           #2                  // String akioss</span><br><span class="line">       2: putstatic     #3                  // Field name:Ljava/lang/String;</span><br><span class="line">       5: ldc           #4                  // String jake</span><br><span class="line">       7: putstatic     #3                  // Field name:Ljava/lang/String;</span><br><span class="line">      10: return        </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可以发现，同一个类中，在static代码块中对静态成员变量<code>name</code>赋值时，与声明<code>name</code>成员变量走的同一代码块。</p>
+        <blockquote>
+<p>将状态栏通知图标或者常驻图标改成深色的方法</p>
+</blockquote>
+<h3 id="5-0之后"><a href="#5-0之后" class="headerlink" title="5.0之后"></a>5.0之后</h3><p>Not since Lollipop. Starting with Android 5.0, the guidelines say:</p>
+<blockquote>
+<p>Notification icons must be entirely white.</p>
+</blockquote>
+<p>Even if they’re not, the system will only consider the alpha channel of your icon, rendering them white.</p>
+<h3 id="6-0之后"><a href="#6-0之后" class="headerlink" title="6.0之后"></a>6.0之后</h3><p><img src="http://7xrn96.com1.z0.glb.clouddn.com/1464674386896.png?watermark/2/text/YWtpb3NzQGdpdGh1Yg==/font/5a6L5L2T/fontsize/500/fill/I0VGRUZFRg==/dissolve/100/gravity/SouthEast/dx/10/dy/10" alt=""></p>
 
       
     </div>
@@ -270,7 +276,7 @@
       
         <div class="post-tags">
           
-            <a href="/tags/Java/" rel="tag">#Java</a>
+            <a href="/tags/Android/" rel="tag">#Android</a>
           
         </div>
       
@@ -279,17 +285,13 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2016/03/08/okHttp3之Cookies管理及持久化/" rel="next" title="okHttp3之Cookies管理及持久化">
-                <i class="fa fa-chevron-left"></i> okHttp3之Cookies管理及持久化
+              <a href="/2016/05/17/Viewpager切换及点击过渡动画/" rel="next" title="Viewpager切换及点击过渡动画">
+                <i class="fa fa-chevron-left"></i> Viewpager切换及点击过渡动画
               </a>
             
           </div>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2016/03/16/对RecycleView-Adapter的简单封装/" rel="prev" title="对RecycleView-Adapter的简单封装">
-                对RecycleView-Adapter的简单封装 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -401,7 +403,7 @@
               
             
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题"><span class="nav-number">1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#测试类"><span class="nav-number">2.</span> <span class="nav-text">测试类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看字节码"><span class="nav-number">3.</span> <span class="nav-text">查看字节码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#classA"><span class="nav-number">3.1.</span> <span class="nav-text">classA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#classB"><span class="nav-number">3.2.</span> <span class="nav-text">classB</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Tips"><span class="nav-number">4.</span> <span class="nav-text">Tips</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#TestMethodA"><span class="nav-number">4.0.1.</span> <span class="nav-text">TestMethodA</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#其字节码"><span class="nav-number">4.0.2.</span> <span class="nav-text">其字节码</span></a></li></ol></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-0之后"><span class="nav-number">1.</span> <span class="nav-text">5.0之后</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-0之后"><span class="nav-number">2.</span> <span class="nav-text">6.0之后</span></a></li></ol></div>
             
           </div>
           <div class="post-toc-indicator-bottom post-toc-indicator">
